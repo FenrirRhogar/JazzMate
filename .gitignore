@@ -1,0 +1,14 @@
+# IDE and environment files
+.idea/
+.venv/
+__pycache__/
+
+# Generated files
+*.mid
+*.mp3
+*.zip
+*.pdf
+
+# SSH keys
+y
+y.pub
