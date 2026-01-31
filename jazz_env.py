@@ -39,8 +39,10 @@ class JazzImprovisationEnv(gym.Env):
         self.current_style = 0.5
 
         # ΝΕΟΙ ΜΕΤΡΗΤΕΣ
-        self.consecutive_notes = 0  # Γενική κούραση (οποιαδήποτε νότα)
-        self.exact_note_repeats = 0  # Κούραση ΙΔΙΑΣ νότας (Spamming)
+        self.consecutive_notes = 0
+        self.exact_note_repeats = 0
+        self.last_note_played = 36
+        self.consecutive_varied_notes = 0
 
         self.manual_mode = False
 
@@ -61,7 +63,9 @@ class JazzImprovisationEnv(gym.Env):
         self.current_step = 0
         self.last_action = 36
         self.consecutive_notes = 0
-        self.exact_note_repeats = 0  # Reset
+        self.exact_note_repeats = 0
+        self.last_note_played = 36
+        self.consecutive_varied_notes = 0
         self.current_action_duration = 0
         self.history = [36] * 16
         self.current_chord_name = self.progression[0]
@@ -100,22 +104,26 @@ class JazzImprovisationEnv(gym.Env):
         else:
             self.current_action_duration = 1
 
-        # Ενημέρωση μετρητών ΠΡΙΝ το reward
+        # Calculate reward based on the CURRENT state, before updates
+        reward = self._calculate_reward(action)
+
+        # NOW update counters for the next state
         if action < 36:  # Note played
             self.consecutive_notes += 1
-            if action == self.last_action:
+            if action == self.last_note_played:
                 self.exact_note_repeats += 1
+                self.consecutive_varied_notes = 1  # Reset variety on repeat
             else:
                 self.exact_note_repeats = 0
-        elif action == 36:  # Rest
+                self.consecutive_varied_notes += 1  # Increment on variety
+            self.last_note_played = action
+        else:  # Rest or Hold
             self.consecutive_notes = 0
             self.exact_note_repeats = 0
-        # Hold doesn't reset exact_repeats, but doesn't increase them either
+            self.consecutive_varied_notes = 0  # Reset variety on break
 
         self.history.append(action)
         if len(self.history) > 16: self.history.pop(0)
-
-        reward = self._calculate_reward(action)
 
         self.last_action = action
         self.current_step += 1
@@ -146,7 +154,7 @@ class JazzImprovisationEnv(gym.Env):
             elif 3 <= interval <= 5:
                 reward += 0.4
             elif interval > 9:
-                reward -= 0.3
+                reward -= 1.5
 
         # 3. ANTI-SPAM (NUCLEAR OPTION)
         if is_note:
@@ -155,14 +163,22 @@ class JazzImprovisationEnv(gym.Env):
             elif self.exact_note_repeats >= 2:
                 reward -= 10.0  # ΑΠΑΓΟΡΕΥΕΤΑΙ - Θα μάθει να μην το κάνει ποτέ
 
-        # 4. PHRASE LOOPS
-        last_3 = self.history[-3:]
-        prev_3 = self.history[-6:-3]
-        if last_3 == prev_3: reward -= 5.0  # Αυστηρότερο loop check
+        # 4. PHRASE LOOPS (ENHANCED)
+        # Penalties are increased to be more severe and discourage looping.
+        # Short 2-note loops (A-B-A-B)
+        if len(self.history) >= 4 and self.history[-2:] == self.history[-4:-2]:
+            reward -= 5.0
+        # 3-note loops (A-B-C-A-B-C)
+        if len(self.history) >= 6 and self.history[-3:] == self.history[-6:-3]:
+            reward -= 10.0
+        # 4-note loops (A-B-C-D-A-B-C-D)
+        if len(self.history) >= 8 and self.history[-4:] == self.history[-8:-4]:
+            reward -= 15.0
 
         # 5. FATIGUE
+        # Softened penalty to allow for longer riffs.
         if is_note:
-            if self.consecutive_notes > 6: reward -= (self.consecutive_notes * 0.5)
+            if self.consecutive_notes > 8: reward -= (self.consecutive_notes * 0.4)
 
         # 6. DYNAMIC HOLD
         if is_hold:
@@ -179,13 +195,24 @@ class JazzImprovisationEnv(gym.Env):
 
         # 7. REST
         if is_rest:
-            if self.consecutive_notes >= 4:
+            # Big reward for resting after a good riff (phrasing)
+            if self.consecutive_varied_notes >= 4:
+                reward += 3.0
+            # Existing logic for general phrasing
+            elif self.consecutive_notes >= 4:
                 reward += 2.0
             elif self.consecutive_notes == 1:
                 reward -= 0.8
             elif self.current_action_duration > 6:
                 reward -= 1.0
             else:
-                reward += 0.1
+                reward -= 0.1 # Gently discourage pointless rests
+
+        # 8. RIFF BONUS
+        # Reward for playing a sequence of varied notes.
+        if self.consecutive_varied_notes == 4:
+            reward += 2.5
+        elif self.consecutive_varied_notes >= 5:
+            reward += 4.0
 
         return reward
