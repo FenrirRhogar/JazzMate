@@ -51,3 +51,105 @@ This document outlines the iterative improvements made to the `jazz_env.py` rein
 
 *   **Πρόβλημα:** Το Riff Bonus έκανε το παίξιμο του agent υπερβολικά "πυκνό" και ασταμάτητο, χωρίς αρκετές παύσεις.
 *   **Λύση:** Υλοποιήθηκε ένας μηχανισμός "φρασεολογίας" (phrasing). Ο agent τώρα λαμβάνει σημαντική ανταμοιβή όταν κάνει παύση αμέσως *μετά* την ολοκλήρωση ενός riff. Αυτό διδάσκει στο μοντέλο να "αναπνέει", δημιουργώντας μουσικές φράσεις που ακολουθούνται από παύσεις, επιτυγχάνοντας μια πιο φυσική ισορροπία μεταξύ πολυπλοκότητας και σιωπής.
+
+---
+
+## Installation and Usage
+
+These instructions are intended for a Debian-based Linux distribution (like Ubuntu).
+
+### 1. Environment Setup
+
+**Activate the Virtual Environment:**
+Before you begin, activate the Python virtual environment.
+```bash
+source .venv/bin/activate
+```
+
+### 2. Install Dependencies
+
+**Install Python Packages:**
+Install the required Python libraries using pip.
+```bash
+pip install -r requirements.txt
+```
+
+**Install FluidSynth:**
+FluidSynth is required to generate audio from the MIDI output.
+```bash
+sudo apt-get update
+sudo apt-get install fluidsynth
+```
+*You will also need a SoundFont file. The `play_jazz.py` script is configured to use `FluidR3_GM.sf2`, which can be downloaded online.*
+
+### 3. Running the Project
+
+**Start FluidSynth:**
+Open a new, separate terminal and run FluidSynth. This will act as a virtual synthesizer for our project to connect to.
+```bash
+fluidsynth -a pulseaudio -m alsa_seq -s -a 'at'/usr/share/soundfonts/FluidR3_GM.sf2
+```
+*Leave this terminal open while you are using the application.*
+
+**Train the Agent:**
+To train a new model from scratch, run the training script. This will delete any existing model and save a new one as `jazz_dqn_model.zip`.
+```bash
+python train.py
+```
+
+**Play and Improvise:**
+Once you have a trained model, run the player script to listen to the AI's improvisation or jam with it using a MIDI controller.
+```bash
+python play_jazz.py
+```
+
+---
+
+## Εγκατάσταση και Χρήση
+
+Αυτές οι οδηγίες προορίζονται για μια διανομή Linux βασισμένη σε Debian (όπως το Ubuntu).
+
+### 1. Προετοιμασία Περιβάλλοντος
+
+**Ενεργοποίηση Εικονικού Περιβάλλοντος:**
+Πριν ξεκινήσετε, ενεργοποιήστε το εικονικό περιβάλλον της Python.
+```bash
+source .venv/bin/activate
+```
+
+### 2. Εγκατάσταση Εξαρτήσεων
+
+**Εγκατάσταση Πακέτων Python:**
+Εγκαταστήστε τις απαραίτητες βιβλιοθήκες Python χρησιμοποιώντας το pip.
+```bash
+pip install -r requirements.txt
+```
+
+**Εγκατάσταση FluidSynth:**
+Το FluidSynth είναι απαραίτητο για την παραγωγή ήχου από το MIDI που παράγει το πρόγραμμα.
+```bash
+sudo apt-get update
+sudo apt-get install fluidsynth
+```
+*Θα χρειαστείτε επίσης ένα αρχείο SoundFont. Το script `play_jazz.py` είναι ρυθμισμένο να χρησιμοποιεί το `FluidR3_GM.sf2`, το οποίο μπορείτε να κατεβάσετε από το διαδίκτυο.*
+
+### 3. Εκτέλεση του Project
+
+**Εκκίνηση του FluidSynth:**
+Ανοίξτε ένα νέο, ξεχωριστό τερματικό και εκτελέστε το FluidSynth. Αυτό θα λειτουργήσει ως ένας εικονικός συνθεσάιζερ στον οποίο θα συνδεθεί το πρόγραμμά μας.
+```bash
+fluidsynth -a pulseaudio -m alsa_seq -s -a 'at'/usr/share/soundfonts/FluidR3_GM.sf2
+```
+*Αφήστε αυτό το τερματικό ανοιχτό καθ' όλη τη διάρκεια χρήσης της εφαρμογής.*
+
+**Εκπαίδευση του Πράκτορα:**
+Για να εκπαιδεύσετε ένα νέο μοντέλο από την αρχή, εκτελέστε το script εκπαίδευσης. Αυτό θα διαγράψει οποιοδήποτε υπάρχον μοντέλο και θα αποθηκεύσει ένα νέο ως `jazz_dqn_model.zip`.
+```bash
+python train.py
+```
+
+**Αναπαραγωγή και Αυτοσχεδιασμός:**
+Μόλις έχετε ένα εκπαιδευμένο μοντέλο, εκτελέστε το script αναπαραγωγής για να ακούσετε τον αυτοσχεδιασμό του AI ή για να τζαμάρετε μαζί του χρησιμοποιώντας ένα MIDI controller.
+```bash
+python play_jazz.py
+```
