@@ -11,24 +11,33 @@ import os
 
 # --- ΡΥΘΜΙΣΕΙΣ ---
 MODEL_PATH = "jazz_dqn_model"
-MIDI_FILENAME = "random_jazz_session.mid"
-WAV_FILENAME = "random_jazz_session.wav"
-MP3_FILENAME = "kalo.mp3"
+MIDI_FILENAME = "jam_session.mid"
+WAV_FILENAME = "jam_session.wav"
+MP3_FILENAME = "jam_session.mp3"
 SOUNDFONT = "/usr/share/soundfonts/FluidR3_GM.sf2"
 
-BPM = 90  # Λίγο πιο αργά για να ακουστεί το Swing
-STEPS_TO_PLAY = 128 * 2
+BPM = 90
+STEPS_TO_PLAY = 128 * 4
 BASE_STEP_DURATION = 60 / BPM / 4
 TICKS_PER_STEP = 120
 
 PIANO_VOICINGS = {
-    "Cm7": [48, 51, 58], "F7": [41, 54, 57],
-    "BbMaj7": [46, 50, 53, 57], "EbMaj7": [39, 55, 58],
-    "Am7b5": [45, 48, 55], "D7": [50, 54, 60],
-    "Gm": [43, 46, 53, 58], "Dm7": [50, 53, 57, 60],
-    "G7": [43, 47, 50, 53], "CMaj7": [48, 52, 55, 59]
+    "Cm7": [48, 51, 55, 58], "F7": [41, 45, 51, 54],
+    "BbMaj7": [46, 50, 53, 57], "EbMaj7": [39, 43, 50, 55],
+    "Am7b5": [45, 48, 51, 55], "D7": [50, 54, 57, 60],
+    "Gm": [43, 46, 50, 53], "Dm7": [50, 53, 57, 60],
+    "G7": [43, 47, 50, 53], "CMaj7": [48, 52, 55, 59],
+    "C7b9": [48, 52, 58, 61], "Fdim7": [41, 44, 47, 50],
+    "Bb6": [46, 50, 53, 55], "E7alt": [40, 44, 50, 52]
 }
 
+ROOT_TO_CHORD = {
+    0: "Cm7", 1: "C7b9", 2: "D7", 3: "EbMaj7",
+    4: "E7alt", 5: "F7", 6: "Fdim7", 7: "Gm",
+    8: "Am7b5", 9: "Am7b5", 10: "BbMaj7", 11: "G7"
+}
+
+# --- SETUP ---
 print(f"Loading Model: {MODEL_PATH}...")
 try:
     env = JazzImprovisationEnv()
@@ -37,150 +46,290 @@ except Exception as e:
     print(f"Error: {e}")
     sys.exit(1)
 
+# ==========================================
+# --- 1. AUDIO OUTPUT AUTO-SELECT ---
+# ==========================================
+print("\n--- 🎛️ SYSTEM CONFIG ---")
+try:
+    outputs = mido.get_output_names()
+except:
+    outputs = []
+
+# Ψάχνουμε FluidSynth αυτόματα
+output_port_name = next((n for n in outputs if "FLUID" in n or "Synth" in n), outputs[0] if outputs else None)
+out_port = mido.open_output(output_port_name) if output_port_name else None
+
+if out_port:
+    print(f"🔊 Audio Output: {output_port_name}")
+else:
+    print("❌ ERROR: Δεν βρέθηκε FluidSynth/Audio Output!")
+
+# ==========================================
+# --- 2. MIDI INPUT PRIORITY LOGIC ---
+# ==========================================
+try:
+    inputs = mido.get_input_names()
+except:
+    inputs = []
+
+print("\n🎹 Scanning for MIDI Controllers...")
+input_port_name = None
+
+# Priority List (Hardware Keywords)
+hw_keywords = ["LPD8", "Keystation", "Arturia", "Akai", "USB", "MIDI 1"]
+
+# 1. Hardware Search
+for name in inputs:
+    # Αγνοούμε VMPK και Through σε αυτή τη φάση
+    if any(kw in name for kw in hw_keywords) and "VMPK" not in name and "Midi Through" not in name:
+        input_port_name = name
+        print(f"   -> Hardware Found: {name}")
+        break
+
+# 2. VMPK Search
+if not input_port_name:
+    input_port_name = next((n for n in inputs if "VMPK" in n), None)
+    if input_port_name: print(f"   -> VMPK Found: {input_port_name}")
+
+# 3. Fallback
+if not input_port_name and inputs:
+    input_port_name = next((n for n in inputs if "Midi Through" in n), inputs[0])
+    print(f"   -> Fallback: {input_port_name}")
+
+
+# --- CONNECT INPUT ---
+# Callback function for Jam Mode
+def midi_callback(msg):
+    if msg.type == 'note_on' and msg.velocity > 0:
+        root = msg.note % 12
+        new_chord = ROOT_TO_CHORD.get(root, "Cm7")
+        try:
+            env.set_manual_chord(new_chord)
+            print(f"🎹 USER: {msg.note} -> \033[93m{new_chord}\033[0m")
+        except AttributeError:
+            pass  # Σε περίπτωση που το env δεν έχει ενημερωθεί ακόμα
+
+
+in_port = None
+if input_port_name:
+    try:
+        # Ανοίγουμε με callback για άμεση απόκριση
+        in_port = mido.open_input(input_port_name, callback=midi_callback)
+        print(f"✅ CONNECTED INPUT: \033[92m{input_port_name}\033[0m")
+    except Exception as e:
+        print(f"❌ Failed to open input: {e}")
+else:
+    print("⚠️  No MIDI Input found.")
+
+# ==========================================
+# --- 3. MENU INTERFACE ---
+# ==========================================
+print("\n" + "=" * 30)
+print("      JAZZMATE SESSION")
+print("=" * 30)
+
+# Ερώτηση 1: Mode
+print("\n[1/2] Ποιος επιλέγει τις συγχορδίες;")
+print("  1. Το Σύστημα (Αυτόματη τυχαία σειρά)")
+print("  2. Ο Χρήστης (Jam Mode με MIDI)")
+mode_choice = input(">> Επιλογή (1 ή 2): ").strip()
+
+MANUAL_CONTROL = (mode_choice == '2')
+
+if MANUAL_CONTROL and not in_port:
+    print("\n⚠️  ΠΡΟΣΟΧΗ: Διαλέξατε Jam Mode αλλά δεν βρέθηκε Controller!")
+    print("   Οι συγχορδίες θα μείνουν κολλημένες στην αρχική (Cm7).")
+
+# Ερώτηση 2: Style
+print("\n[2/2] Τι στυλ συνοδείας (Πιάνο) θέλετε;")
+print("  1. Simple (Block Chords)")
+print("  2. Arpeggio (Ρυθμικό Άρπισμα)")
+style_choice = input(">> Επιλογή (1 ή 2): ").strip()
+
+STYLE = 'ARPEGGIO' if style_choice == '2' else 'SIMPLE'
+
+print("\n🚀 ΕΚΚΙΝΗΣΗ SESSION...")
+if MANUAL_CONTROL:
+    print("🎹 Παίξε νότες στο controller σου τώρα!")
+
+# ==========================================
+# --- SETUP MIDI FILE ---
+# ==========================================
 mid = MidiFile(ticks_per_beat=480)
 track_solo = MidiTrack()
 mid.tracks.append(track_solo)
 track_backing = MidiTrack()
 mid.tracks.append(track_backing)
-
 meta_tempo = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(BPM))
 track_solo.append(meta_tempo)
 track_backing.append(meta_tempo)
+track_solo.append(Message('program_change', channel=0, program=0))
+track_backing.append(Message('program_change', channel=1, program=0))
 
-track_solo.append(Message('program_change', channel=0, program=0, time=0))
-track_backing.append(Message('program_change', channel=1, program=0, time=0))
+if out_port:
+    out_port.send(Message('program_change', channel=0, program=0))
+    out_port.send(Message('program_change', channel=1, program=0))
 
-try:
-    outputs = mido.get_output_names()
-except:
-    outputs = []
-port_name = next((n for n in outputs if "FLUID" in n or "Synth" in n), outputs[0] if outputs else None)
-port = mido.open_output(port_name) if port_name else None
-if port: print(f"✅ Connected to: {port_name}")
-
-print("\n--- RECORDING WITH SWING FEEL ---")
+# ==========================================
+# --- MAIN LOOP ---
+# ==========================================
 obs, _ = env.reset()
-
 active_note = None
 active_chord_notes = []
+active_arp_note = None
+current_chord_name = "Cm7"
 file_chord_notes = []
-current_chord_name = ""
 steps_since_chord_change = 0
 
-if port:
-    port.send(Message('program_change', channel=0, program=0))
-    port.send(Message('program_change', channel=1, program=0))
+try:
+    for step in range(STEPS_TO_PLAY):
+        # 1. AI PREDICTION
+        action, _ = model.predict(obs, deterministic=False)
 
-for step in range(STEPS_TO_PLAY):
-    action, _ = model.predict(obs, deterministic=False)
+        is_swing_long = (step % 2 == 0)
+        swing_factor = 1.3 if is_swing_long else 0.7
+        current_step_ticks = int(TICKS_PER_STEP * swing_factor)
+        current_step_time = BASE_STEP_DURATION * swing_factor
 
-    # --- SWING LOGIC (HUMANIZER) ---
-    # On-beat (even step): Long (1.3x)
-    # Off-beat (odd step): Short (0.7x)
-    is_swing_long = (step % 2 == 0)
-    swing_factor = 1.3 if is_swing_long else 0.7
+        is_note = action < 36
+        is_rest = action == 36
+        is_hold = action == 37
+        note_val = 48 + int(action) if is_note else None
 
-    current_step_ticks = int(TICKS_PER_STEP * swing_factor)
-    current_step_time = BASE_STEP_DURATION * swing_factor
+        env_chord = env.current_chord_name
+        chord_notes = PIANO_VOICINGS.get(env_chord, [48, 52, 55])
 
-    is_note = action < 36
-    is_rest = action == 36
-    is_hold = action == 37
-    note_val = 48 + int(action) if is_note else None
+        # 2. LEFT HAND (BACKING) LOGIC
+        if STYLE == 'SIMPLE':
+            # --- BLOCK CHORDS ---
+            # Παίζουμε νέα συγχορδία ΜΟΝΟ αν άλλαξε το όνομα (από το Auto ή το Manual Input)
+            # Ή αν είναι το πρώτο βήμα
+            if env_chord != current_chord_name or step == 0:
+                if out_port:
+                    for n in active_chord_notes:
+                        out_port.send(Message('note_off', channel=1, note=n, velocity=0))
+                    for n in chord_notes:
+                        vel = random.randint(80, 95)
+                        out_port.send(Message('note_on', channel=1, note=n, velocity=vel))
+                    active_chord_notes = chord_notes
 
-    env_chord = env.current_chord_name
+                # File Logic
+                if file_chord_notes:
+                    duration_ticks = steps_since_chord_change * TICKS_PER_STEP
+                    track_backing.append(
+                        Message('note_off', channel=1, note=file_chord_notes[0], velocity=0, time=duration_ticks))
+                    for n in file_chord_notes[1:]:
+                        track_backing.append(Message('note_off', channel=1, note=n, velocity=0, time=0))
 
-    # --- BACKING TRACK ---
-    if env_chord != current_chord_name:
-        if port:
-            for n in active_chord_notes:
-                port.send(Message('note_off', channel=1, note=n, velocity=0))
-            new_notes = PIANO_VOICINGS.get(env_chord, [48, 52, 55])
-            for n in new_notes:
-                vel = random.randint(45, 55)
-                port.send(Message('note_on', channel=1, note=n, velocity=vel))
-            active_chord_notes = new_notes
+                for n in chord_notes:
+                    track_backing.append(Message('note_on', channel=1, note=n, velocity=90, time=0))
 
-        if file_chord_notes:
-            # Backing isn't swung per step, it's held, so we just sum up real time
-            # Here we simplify and put it on grid, backing doesn't need heavy swing
-            track_backing.append(Message('note_off', channel=1, note=file_chord_notes[0], velocity=0,
-                                         time=steps_since_chord_change * TICKS_PER_STEP))
-            for n in file_chord_notes[1:]:
-                track_backing.append(Message('note_off', channel=1, note=n, velocity=0, time=0))
+                file_chord_notes = chord_notes
+                steps_since_chord_change = 0
+                current_chord_name = env_chord
 
-        new_file_notes = PIANO_VOICINGS.get(env_chord, [48, 52, 55])
-        for n in new_file_notes:
-            track_backing.append(Message('note_on', channel=1, note=n, velocity=50, time=0))
+            steps_since_chord_change += 1
 
-        file_chord_notes = new_file_notes
-        current_chord_name = env_chord
-        steps_since_chord_change = 0
+        elif STYLE == 'ARPEGGIO':
+            # --- ARPEGGIATOR ---
+            current_chord_name = env_chord
 
-    steps_since_chord_change += 1
+            # Stop previous arp note
+            if active_arp_note is not None:
+                if out_port: out_port.send(Message('note_off', channel=1, note=active_arp_note, velocity=0))
+                track_backing.append(
+                    Message('note_off', channel=1, note=active_arp_note, velocity=0, time=current_step_ticks))
+                active_arp_note = None
+            else:
+                track_backing.append(Message('note_off', channel=1, note=0, velocity=0, time=current_step_ticks))
 
-    # --- SOLO TRACK ---
-    if port:
-        if active_note is not None and not is_hold:
-            port.send(Message('note_off', channel=0, note=active_note, velocity=0))
-            active_note = None
+            # Play new note every 2 steps (8th notes)
+            if step % 2 == 0:
+                note_idx = (step // 2) % len(chord_notes)
+                arp_note_val = chord_notes[note_idx]
+                vel = random.randint(85, 100)
+                if out_port: out_port.send(Message('note_on', channel=1, note=arp_note_val, velocity=vel))
+                track_backing.append(Message('note_on', channel=1, note=arp_note_val, velocity=vel, time=0))
+                active_arp_note = arp_note_val
+            else:
+                track_backing.append(Message('note_off', channel=1, note=0, velocity=0, time=0))
 
+        # 3. RIGHT HAND (SOLO) LOGIC
+        if out_port:
+            if active_note is not None and not is_hold:
+                out_port.send(Message('note_off', channel=0, note=active_note, velocity=0))
+                active_note = None
+
+            if is_note:
+                pitch_boost = (note_val - 60) // 2
+                base_vel = random.randint(110, 127)
+                final_vel = min(127, max(1, base_vel + pitch_boost))
+                out_port.send(Message('note_on', channel=0, note=note_val, velocity=final_vel))
+                active_note = note_val
+
+                note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+                octave = (action // 12) + 3
+                name = note_names[action % 12]
+                bar = (step // 16) + 1
+
+                # ΠΑΝΤΑ εμφανίζουμε τι παίζει το AI
+                prefix = "🎷 AI:" if MANUAL_CONTROL else "Melody:"
+                print(f"Bar {bar} | Chord: {current_chord_name:7s} | {prefix} \033[96m{name}{octave}\033[0m")
+
+            elif is_rest:
+                prefix = "🎷 AI:" if MANUAL_CONTROL else "Melody:"
+                print(f"Bar {(step // 16) + 1} | Chord: {current_chord_name:7s} | {prefix} ---")
+            elif is_hold:
+                prefix = "🎷 AI:" if MANUAL_CONTROL else "Melody:"
+                print(f"Bar {(step // 16) + 1} | Chord: {current_chord_name:7s} | {prefix} ...")
+
+        # 4. FILE SOLO LOGIC
         if is_note:
-            # HUMAN VELOCITY
-            # Higher pitch = slightly louder
-            pitch_boost = (note_val - 60) // 2
-            # Downbeat accent (start of bar)
-            beat_accent = 10 if (step % 16 == 0) else 0
+            track_solo.append(Message('note_on', channel=0, note=note_val, velocity=110, time=0))
+            track_solo.append(Message('note_off', channel=0, note=note_val, velocity=0, time=current_step_ticks))
+        else:
+            track_solo.append(Message('note_off', channel=0, note=0, velocity=0, time=current_step_ticks))
 
-            base_vel = random.randint(80, 95)
-            final_vel = min(127, max(1, base_vel + pitch_boost + beat_accent))
+        if out_port: time.sleep(current_step_time)
 
-            port.send(Message('note_on', channel=0, note=note_val, velocity=final_vel))
-            active_note = note_val
+        # 5. STEP ENVIRONMENT
+        if MANUAL_CONTROL:
+            # Στο Manual Mode, η συγχορδία αλλάζει ΜΟΝΟ από το callback
+            # Κάνουμε step για να προχωρήσει το χρόνο/ιστορικό του Agent, αλλά κρατάμε τη συγχορδία σταθερή
+            # (Εκτός αν άλλαξε στο ενδιάμεσο από το callback, το οποίο θα έχει ήδη ενημερώσει το env)
+            saved_chord = env.current_chord_name
+            obs, _, _, _, _ = env.step(action)
+            env.current_chord_name = saved_chord  # Επαναφορά στην επιλογή χρήστη (το step του env μπορεί να προσπάθησε να την αλλάξει)
+        else:
+            # Στο Auto Mode, αφήνουμε το περιβάλλον να αλλάξει συγχορδία
+            obs, _, done, _, _ = env.step(action)
+            if done: obs, _ = env.reset()
 
-            note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-            octave = (action // 12) + 3
-            name = note_names[action % 12]
-            bar = (step // 16) + 1
-            print(f"Bar {bar} | Chord: {current_chord_name:7s} | \033[96m{name}{octave}\033[0m")
-
-        elif is_rest:
-            print(f"Bar {(step // 16) + 1} | Chord: {current_chord_name:7s} | ---")
-        elif is_hold:
-            print(f"Bar {(step // 16) + 1} | Chord: {current_chord_name:7s} | ...")
-
-    # FILE RECORDING (APPLYING SWING TO MIDI TICKS)
-    if is_note:
-        track_solo.append(Message('note_on', channel=0, note=note_val, velocity=90, time=0))
-        track_solo.append(Message('note_off', channel=0, note=note_val, velocity=0, time=current_step_ticks))
-    else:
-        track_solo.append(Message('note_off', channel=0, note=0, velocity=0, time=current_step_ticks))
-
-    if port: time.sleep(current_step_time)
-
-    obs, _, done, _, _ = env.step(action)
-    if done: obs, _ = env.reset()
+except KeyboardInterrupt:
+    print("\nStopping...")
 
 # Cleanup
-if port:
-    if active_note: port.send(Message('note_off', channel=0, note=active_note, velocity=0))
-    for n in active_chord_notes: port.send(Message('note_off', channel=1, note=n, velocity=0))
-    port.close()
+if out_port:
+    if active_note: out_port.send(Message('note_off', channel=0, note=active_note, velocity=0))
+    for n in active_chord_notes: out_port.send(Message('note_off', channel=1, note=n, velocity=0))
+    if active_arp_note: out_port.send(Message('note_off', channel=1, note=active_arp_note, velocity=0))
+    out_port.close()
+if in_port: in_port.close()
 
+# Close file buffers
 if file_chord_notes:
-    track_backing.append(Message('note_off', channel=1, note=file_chord_notes[0], velocity=0,
-                                 time=steps_since_chord_change * TICKS_PER_STEP))
+    duration_ticks = steps_since_chord_change * TICKS_PER_STEP
+    track_backing.append(Message('note_off', channel=1, note=file_chord_notes[0], velocity=0, time=duration_ticks))
     for n in file_chord_notes[1:]:
         track_backing.append(Message('note_off', channel=1, note=n, velocity=0, time=0))
 
 mid.save(MIDI_FILENAME)
 print(f"\n✅ MIDI saved to {MIDI_FILENAME}")
 
-# --- MP3 RENDERING ---
 print("\n--- RENDERING AUDIO ---")
 if os.path.exists(SOUNDFONT):
     try:
-        subprocess.run(["fluidsynth", "-ni", "-g", "1.0", "-F", WAV_FILENAME, SOUNDFONT, MIDI_FILENAME],
+        subprocess.run(["fluidsynth", "-ni", "-g", "1.5", "-F", WAV_FILENAME, SOUNDFONT, MIDI_FILENAME],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["ffmpeg", "-y", "-i", WAV_FILENAME, "-acodec", "libmp3lame", "-q:a", "2", MP3_FILENAME],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

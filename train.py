@@ -5,10 +5,9 @@ import os
 
 env = JazzImprovisationEnv()
 
-# Διαγραφή παλιού μοντέλου (ΥΠΟΧΡΕΩΤΙΚΟ λόγω αλλαγής διαστάσεων)
 if os.path.exists("jazz_dqn_model.zip"):
     os.remove("jazz_dqn_model.zip")
-    print("Deleted old model to start fresh with 3 Octaves.")
+    print("Deleted old model to start fresh.")
 
 model = DQN(
     "MultiInputPolicy",
