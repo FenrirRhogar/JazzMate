@@ -26,10 +26,8 @@ JazzMate/
 ├── jazz_env.py          # Custom RL environment (MDP definition)
 ├── train.py             # Training script with monitoring
 ├── play_jazz.py         # Interactive playback system
-├── report.tex           # Full technical report (LaTeX)
+├── report.pdf           # Full technical report (LaTeX)
 ├── requirements.txt     # Python dependencies
-├── training_logs/       # Training data and metrics
-│   └── monitor.csv
 └── README.md
 ```
 
