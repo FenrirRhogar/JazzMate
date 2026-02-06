@@ -26,76 +26,22 @@ JazzMate/
 ├── jazz_env.py          # Custom RL environment (MDP definition)
 ├── train.py             # Training script with monitoring
 ├── play_jazz.py         # Interactive playback system
-├── report.pdf           # Full technical report (LaTeX)
+├── report.pdf           # Full technical report
 ├── requirements.txt     # Python dependencies
 └── README.md
 ```
 
 ---
 
-## 🧠 Technical Architecture
+## 📖 Technical Details
 
-### Environment (MDP Specification)
+For comprehensive technical documentation including:
+- MDP formulation and state/action space design
+- Detailed reward function architecture and evolution
+- Training methodology and hyperparameters
+- Performance analysis and results
 
-**State Space** (`Dict` observation):
-- **`chord_tones`**: Multi-hot encoding (12 dimensions) of current chord notes
-- **`step_progress`**: Position within the piece (0→1)
-- **`last_action`**: Previous note/rest/hold action
-- **`held_duration`**: How long the current note has been sustained
-- **`style_seed`**: Random variation factor for diversity
-
-**Action Space** (38 discrete actions):
-- Actions 0-35: Notes spanning 3 octaves (C3 to B5)
-- Action 36: Rest (silence)
-- Action 37: Hold (sustain current note)
-
-**Reward Function** 
-
-### Algorithm
-
-- **Model**: Deep Q-Network (DQN) with `MultiInputPolicy`
-- **Framework**: Stable-Baselines3
-- **Training Steps**: 200,000 timesteps
-- **Learning Rate**: 1e-4
-- **Buffer Size**: 50,000
-- **Exploration**: Decaying ε-greedy (40% → 5%)
-
----
-
-## 🎵 Reward Shaping Evolution
-
-The reward function underwent several iterations to balance musical correctness with creative freedom:
-
-### 1. **Harmonic Compliance**
-- **+1.0** for notes within the current chord
-- **-0.6** for out-of-chord notes
-
-### 2. **Melodic Flow**
-- **+0.8** for small intervals (1-2 semitones) → smooth lines
-- **-1.5** for large leaps (>9 semitones) → penalize disjunct motion
-
-### 3. **Anti-Spam Mechanism**
-Prevents the agent from repeating the same note:
-```python
-if exact_note_repeats == 1:  reward -= 2.0
-elif exact_note_repeats >= 2: reward -= 10.0  # Severe penalty
-```
-
-### 4. **Loop Detection**
-Detects and penalizes repetitive patterns:
-- 2-note loops (A-B-A-B): **-5.0**
-- 3-note loops (A-B-C-A-B-C): **-10.0**
-- 4-note loops: **-15.0**
-
-### 5. **Riff Bonus**
-Encourages melodic phrases with varied notes:
-- 4 consecutive different notes: **+2.5**
-- 5+ consecutive different notes: **+4.0**
-
-### 6. **Musical Phrasing**
-Teaches the agent to "breathe":
-- **+3.0** for resting after a successful riff (4+ varied notes)
-- Encourages natural phrase boundaries
+Please refer to [report.pdf](report.pdf).
 
 ---
 
