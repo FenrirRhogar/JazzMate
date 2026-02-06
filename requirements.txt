@@ -3,3 +3,4 @@ stable-baselines3
 numpy
 mido
 python-rtmidi
+matplotlib

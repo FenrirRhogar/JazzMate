@@ -156,14 +156,14 @@ class JazzImprovisationEnv(gym.Env):
             elif interval > 9:
                 reward -= 1.5
 
-        # 3. ANTI-SPAM (NUCLEAR OPTION)
+        # 3. ANTI-SPAM
         if is_note:
             if self.exact_note_repeats == 1:
                 reward -= 2.0  # Μην το ξαναπαίξεις
             elif self.exact_note_repeats >= 2:
                 reward -= 10.0  # ΑΠΑΓΟΡΕΥΕΤΑΙ - Θα μάθει να μην το κάνει ποτέ
 
-        # 4. PHRASE LOOPS (ENHANCED)
+        # 4. PHRASE LOOPS
         # Penalties are increased to be more severe and discourage looping.
         # Short 2-note loops (A-B-A-B)
         if len(self.history) >= 4 and self.history[-2:] == self.history[-4:-2]:

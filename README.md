@@ -1,155 +1,217 @@
-# Project Evolution: AI Jazz Improvisation Agent
+# JazzMate 🎷
 
-This document outlines the iterative improvements made to the `jazz_env.py` reinforcement learning environment to enhance the musical quality of the AI's improvisations.
+**An Autonomous Jazz Improvisation Agent using Deep Reinforcement Learning**
 
-## 1. Enhanced Loop Detection
-
-*   **Problem:** The agent was getting stuck in short, repetitive melodic loops (e.g., A-B-A-B).
-*   **Solution:** The initial loop detection, which only checked for 3-note repetitions, was expanded. The system now detects and penalizes 2, 3, and 4-note loops with increasing severity, forcing the agent to find more varied patterns.
-
-## 2. Anti-Spam & Large Leap Penalties
-
-*   **Problem:** The agent would often spam the same note or repeatedly jump between two distant notes (e.g., G5 and D4).
-*   **Solution:**
-    *   A bug was fixed where "hold" actions would incorrectly reset the note-spamming counter. A new mechanism (`last_note_played`) was introduced for more robust spam detection.
-    *   The penalty for large, un-melodic leaps between notes was significantly increased to encourage smoother melodic lines.
-
-## 3. Encouraging Musical Riffs
-
-*   **Problem:** After the previous fixes, the agent became too cautious, playing only short notes and pausing frequently.
-*   **Solution:** A "Riff Bonus" was introduced. The agent now receives a positive reward for playing a sequence of 4 or more *different* notes, directly incentivizing the creation of melodic runs. The "fatigue" penalty was also softened to allow these longer phrases to form.
-
-## 4. Teaching Musical Phrasing ("Breathing")
-
-*   **Problem:** The Riff Bonus made the agent's playing too dense and relentless, with insufficient pauses.
-*   **Solution:** A "phrasing" mechanic was implemented. The agent now receives a significant reward for resting immediately *after* completing a riff. This teaches the model to "breathe" by creating musical phrases followed by pauses, achieving a more natural balance between complexity and silence.
+JazzMate is an intelligent musical agent that learns to generate jazz solos in real-time through Deep Q-Learning (DQN). The system responds dynamically to chord progressions and can interact with human musicians via MIDI controllers.
 
 ---
 
-# Εξέλιξη Project: AI Agent Τζαζ Αυτοσχεδιασμού
+## 🎯 Project Overview
 
-Αυτό το έγγραφο περιγράφει τις διαδοχικές βελτιώσεις που έγιναν στο περιβάλλον reinforcement learning `jazz_env.py` για την ενίσχυση της μουσικής ποιότητας των αυτοσχεδιασμών του AI.
+This project implements an autonomous agent capable of:
+- **Real-time jazz improvisation** with harmonic awareness
+- **Interactive jamming** with human musicians via MIDI input
+- **Musical phrasing** through learned reward shaping
+- **Anti-repetition mechanisms** to avoid monotonous patterns
+- **Swing feel** and humanized playback
 
-## 1. Βελτιωμένη Ανίχνευση Επανάληψης
-
-*   **Πρόβλημα:** Ο agent "κολλούσε" σε σύντομες, επαναλαμβανόμενες μελωδικές φράσεις (π.χ., A-B-A-B).
-*   **Λύση:** Η αρχική ανίχνευση επανάληψης, που έλεγχε μόνο για μοτίβα 3 νοτών, επεκτάθηκε. Το σύστημα πλέον ανιχνεύει και τιμωρεί επαναλήψεις 2, 3 και 4 νοτών με αυξανόμενη αυστηρότητα, αναγκάζοντας τον agent να αναζητά πιο ποικίλα μοτίβα.
-
-## 2. Κατάργηση "Spam" και Τιμωρία Μεγάλων Πηδημάτων
-
-*   **Πρόβλημα:** Ο agent συχνά έπαιζε την ίδια νότα συνεχόμενα (spamming) ή πηδούσε επανειλημμένα μεταξύ δύο απόμακρων νοτών (π.χ., G5 και D4).
-*   **Λύση:**
-    *   Διορθώθηκε ένα σφάλμα όπου η ενέργεια "hold" μηδένιζε εσφαλμένα τον μετρητή spamming. Εισήχθη ένας νέος μηχανισμός (`last_note_played`) για πιο αξιόπιστη ανίχνευση spam.
-    *   Η ποινή για μεγάλα, μη-μελωδικά πηδήματα μεταξύ νοτών αυξήθηκε σημαντικά για να ενθαρρύνει πιο ομαλές μελωδικές γραμμές.
-
-## 3. Ενθάρρυνση Μουσικών Φράσεων (Riffs)
-
-*   **Πρόβλημα:** Μετά τις προηγούμενες διορθώσεις, ο agent έγινε υπερβολικά προσεκτικός, παίζοντας μόνο σύντομες νότες και συχνές παύσεις.
-*   **Λύση:** Εισήχθη ένα "Riff Bonus". Ο agent πλέον λαμβάνει θετική ανταμοιβή όταν παίζει μια ακολουθία 4 ή περισσότερων *διαφορετικών* νοτών, δίνοντας άμεσο κίνητρο για τη δημιουργία μελωδικών περασμάτων. Η ποινή "κόπωσης" (fatigue) επίσης μειώθηκε για να επιτρέπει τη δημιουργία αυτών των μεγαλύτερων φράσεων.
-
-## 4. Διδασκαλία Μουσικής Φρασεολογίας ("Αναπνοή")
-
-*   **Πρόβλημα:** Το Riff Bonus έκανε το παίξιμο του agent υπερβολικά "πυκνό" και ασταμάτητο, χωρίς αρκετές παύσεις.
-*   **Λύση:** Υλοποιήθηκε ένας μηχανισμός "φρασεολογίας" (phrasing). Ο agent τώρα λαμβάνει σημαντική ανταμοιβή όταν κάνει παύση αμέσως *μετά* την ολοκλήρωση ενός riff. Αυτό διδάσκει στο μοντέλο να "αναπνέει", δημιουργώντας μουσικές φράσεις που ακολουθούνται από παύσεις, επιτυγχάνοντας μια πιο φυσική ισορροπία μεταξύ πολυπλοκότητας και σιωπής.
+The agent is trained using **Deep Q-Networks (DQN)** from Stable-Baselines3, with a custom Gymnasium environment that encodes musical theory into the reward function.
 
 ---
 
-## Installation and Usage
+## 📁 Project Structure
 
-These instructions are intended for a Debian-based Linux distribution (like Ubuntu).
+```
+JazzMate/
+├── jazz_env.py          # Custom RL environment (MDP definition)
+├── train.py             # Training script with monitoring
+├── play_jazz.py         # Interactive playback system
+├── report.tex           # Full technical report (LaTeX)
+├── requirements.txt     # Python dependencies
+├── training_logs/       # Training data and metrics
+│   └── monitor.csv
+└── README.md
+```
 
-### 1. Environment Setup
+---
 
-**Activate the Virtual Environment:**
-Before you begin, activate the Python virtual environment.
+## 🧠 Technical Architecture
+
+### Environment (MDP Specification)
+
+**State Space** (`Dict` observation):
+- **`chord_tones`**: Multi-hot encoding (12 dimensions) of current chord notes
+- **`step_progress`**: Position within the piece (0→1)
+- **`last_action`**: Previous note/rest/hold action
+- **`held_duration`**: How long the current note has been sustained
+- **`style_seed`**: Random variation factor for diversity
+
+**Action Space** (38 discrete actions):
+- Actions 0-35: Notes spanning 3 octaves (C3 to B5)
+- Action 36: Rest (silence)
+- Action 37: Hold (sustain current note)
+
+**Reward Function** 
+
+### Algorithm
+
+- **Model**: Deep Q-Network (DQN) with `MultiInputPolicy`
+- **Framework**: Stable-Baselines3
+- **Training Steps**: 200,000 timesteps
+- **Learning Rate**: 1e-4
+- **Buffer Size**: 50,000
+- **Exploration**: Decaying ε-greedy (40% → 5%)
+
+---
+
+## 🎵 Reward Shaping Evolution
+
+The reward function underwent several iterations to balance musical correctness with creative freedom:
+
+### 1. **Harmonic Compliance**
+- **+1.0** for notes within the current chord
+- **-0.6** for out-of-chord notes
+
+### 2. **Melodic Flow**
+- **+0.8** for small intervals (1-2 semitones) → smooth lines
+- **-1.5** for large leaps (>9 semitones) → penalize disjunct motion
+
+### 3. **Anti-Spam Mechanism**
+Prevents the agent from repeating the same note:
+```python
+if exact_note_repeats == 1:  reward -= 2.0
+elif exact_note_repeats >= 2: reward -= 10.0  # Severe penalty
+```
+
+### 4. **Loop Detection**
+Detects and penalizes repetitive patterns:
+- 2-note loops (A-B-A-B): **-5.0**
+- 3-note loops (A-B-C-A-B-C): **-10.0**
+- 4-note loops: **-15.0**
+
+### 5. **Riff Bonus**
+Encourages melodic phrases with varied notes:
+- 4 consecutive different notes: **+2.5**
+- 5+ consecutive different notes: **+4.0**
+
+### 6. **Musical Phrasing**
+Teaches the agent to "breathe":
+- **+3.0** for resting after a successful riff (4+ varied notes)
+- Encourages natural phrase boundaries
+
+---
+
+## 🚀 Installation & Usage
+
+### Prerequisites
+
+This project is designed for **Linux (Debian-based)** systems like Ubuntu.
+
+### 1. Setup Virtual Environment
+
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
 ### 2. Install Dependencies
 
-**Install Python Packages:**
-Install the required Python libraries using pip.
+**Python Packages:**
 ```bash
 pip install -r requirements.txt
 ```
 
-**Install FluidSynth:**
-FluidSynth is required to generate audio from the MIDI output.
+**System Dependencies (FluidSynth):**
 ```bash
 sudo apt-get update
-sudo apt-get install fluidsynth
+sudo apt-get install fluidsynth fluid-soundfont-gm
 ```
-*You will also need a SoundFont file. The `play_jazz.py` script is configured to use `FluidR3_GM.sf2`, which can be downloaded online.*
+
+**Download SoundFont (if not included):**
+```bash
+sudo apt-get install fluid-soundfont-gm
+# This installs to /usr/share/soundfonts/FluidR3_GM.sf2
+```
 
 ### 3. Running the Project
 
-**Start FluidSynth:**
-Open a new, separate terminal and run FluidSynth. This will act as a virtual synthesizer for our project to connect to.
-```bash
-fluidsynth -a pulseaudio -m alsa_seq -s -a 'at'/usr/share/soundfonts/FluidR3_GM.sf2
-```
-*Leave this terminal open while you are using the application.*
+#### Start FluidSynth (Audio Backend)
 
-**Train the Agent:**
-To train a new model from scratch, run the training script. This will delete any existing model and save a new one as `jazz_dqn_model.zip`.
+Open a **separate terminal** and run:
+```bash
+fluidsynth -a pulseaudio -m alsa_seq -s /usr/share/soundfonts/FluidR3_GM.sf2
+```
+*Keep this terminal open during usage.*
+
+#### Train the Agent
+
+To train a new model from scratch:
 ```bash
 python train.py
 ```
+- Deletes any existing `jazz_dqn_model.zip`
+- Trains for 200k steps
+- Saves model and generates `training_graph.png`
 
-**Play and Improvise:**
-Once you have a trained model, run the player script to listen to the AI's improvisation or jam with it using a MIDI controller.
+#### Play & Jam
+
+To hear the trained agent improvise:
 ```bash
 python play_jazz.py
 ```
+
+**Interactive Options:**
+1. **Auto Mode**: System generates random chord progressions
+2. **Jam Mode**: Use a MIDI controller to control chord changes in real-time
+
+**Style Options:**
+1. **Simple**: Block chord accompaniment
+2. **Arpeggio**: Rhythmic arpeggiated backing
+
+**Output Files:**
+- `jam_session.mid` - MIDI recording
+- `jam_session.mp3` - Rendered audio
 
 ---
 
-## Εγκατάσταση και Χρήση
 
-Αυτές οι οδηγίες προορίζονται για μια διανομή Linux βασισμένη σε Debian (όπως το Ubuntu).
+## 🎹 MIDI Controller Support
 
-### 1. Προετοιμασία Περιβάλλοντος
+JazzMate automatically detects MIDI input devices with priority:
 
-**Ενεργοποίηση Εικονικού Περιβάλλοντος:**
-Πριν ξεκινήσετε, ενεργοποιήστε το εικονικό περιβάλλον της Python.
-```bash
-source .venv/bin/activate
-```
+1. **Hardware Controllers** (e.g., Akai, Keystation, Arturia)
+2. **Virtual MIDI Piano Keyboard (VMPK)**
+3. **System MIDI Through ports**
 
-### 2. Εγκατάσταση Εξαρτήσεων
+In **Jam Mode**, play root notes on your controller to change chords dynamically:
+- **C** → Cm7
+- **D** → D7
+- **Eb** → EbMaj7
+- **F** → F7
+- **G** → Gm or G7
+- **A** → Am7b5
+- **Bb** → BbMaj7
 
-**Εγκατάσταση Πακέτων Python:**
-Εγκαταστήστε τις απαραίτητες βιβλιοθήκες Python χρησιμοποιώντας το pip.
-```bash
-pip install -r requirements.txt
-```
+---
 
-**Εγκατάσταση FluidSynth:**
-Το FluidSynth είναι απαραίτητο για την παραγωγή ήχου από το MIDI που παράγει το πρόγραμμα.
-```bash
-sudo apt-get update
-sudo apt-get install fluidsynth
-```
-*Θα χρειαστείτε επίσης ένα αρχείο SoundFont. Το script `play_jazz.py` είναι ρυθμισμένο να χρησιμοποιεί το `FluidR3_GM.sf2`, το οποίο μπορείτε να κατεβάσετε από το διαδίκτυο.*
 
-### 3. Εκτέλεση του Project
+## 📝 Academic Context
 
-**Εκκίνηση του FluidSynth:**
-Ανοίξτε ένα νέο, ξεχωριστό τερματικό και εκτελέστε το FluidSynth. Αυτό θα λειτουργήσει ως ένας εικονικός συνθεσάιζερ στον οποίο θα συνδεθεί το πρόγραμμά μας.
-```bash
-fluidsynth -a pulseaudio -m alsa_seq -s -a 'at'/usr/share/soundfonts/FluidR3_GM.sf2
-```
-*Αφήστε αυτό το τερματικό ανοιχτό καθ' όλη τη διάρκεια χρήσης της εφαρμογής.*
+**Course**: Autonomous Agents  
+**Institution**: Technical University of Crete 
+**Student**: Ioannis Bouritis 
+**Semester**: Winter 2025-2026
 
-**Εκπαίδευση του Πράκτορα:**
-Για να εκπαιδεύσετε ένα νέο μοντέλο από την αρχή, εκτελέστε το script εκπαίδευσης. Αυτό θα διαγράψει οποιοδήποτε υπάρχον μοντέλο και θα αποθηκεύσει ένα νέο ως `jazz_dqn_model.zip`.
-```bash
-python train.py
-```
+---
 
-**Αναπαραγωγή και Αυτοσχεδιασμός:**
-Μόλις έχετε ένα εκπαιδευμένο μοντέλο, εκτελέστε το script αναπαραγωγής για να ακούσετε τον αυτοσχεδιασμό του AI ή για να τζαμάρετε μαζί του χρησιμοποιώντας ένα MIDI controller.
-```bash
-python play_jazz.py
-```
+## 🛠️ Technologies Used
+
+- **Python 3.x**
+- **Gymnasium** (OpenAI Gym successor)
+- **Stable-Baselines3** (DQN implementation)
+- **Mido** (MIDI I/O)
+- **FluidSynth** (Audio synthesis)
+- **FFmpeg** (Audio conversion)
+- **Matplotlib** (Training visualization)
+
+---
