@@ -7,7 +7,6 @@ __pycache__/
 *.mid
 *.mp3
 *.zip
-*.pdf
 
 # SSH keys
 y
