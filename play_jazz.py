@@ -9,28 +9,31 @@ import random
 import subprocess
 import os
 
-# --- ΡΥΘΜΙΣΕΙΣ ---
-MODEL_PATH = "jazz_dqn_model"
-MIDI_FILENAME = "jam_session.mid"
-WAV_FILENAME = "jam_session.wav"
-MP3_FILENAME = "jam_session.mp3"
+# === CONFIGURATION ===
+MODEL_PATH = "jazz_model"
+MIDI_FILENAME = "output/jam_session.mid"
+WAV_FILENAME = "output/jam_session.wav"
+MP3_FILENAME = "output/jam_session.mp3"
 SOUNDFONT = "/usr/share/soundfonts/FluidR3_GM.sf2"
 
+# Timing settings - 16th notes at 90 BPM
 BPM = 90
-STEPS_TO_PLAY = 128 * 4
-BASE_STEP_DURATION = 60 / BPM / 4
-TICKS_PER_STEP = 120
+STEPS_TO_PLAY = 128 * 4  # Total steps (32 bars at 16 steps per bar)
+BASE_STEP_DURATION = 60 / BPM / 4  # Duration of each 16th note in seconds
+TICKS_PER_STEP = 120  # MIDI ticks per step
 
+# Piano chord voicings for left hand accompaniment
 PIANO_VOICINGS = {
-    "Cm7": [48, 51, 55, 58], "F7": [41, 45, 51, 54],
-    "BbMaj7": [46, 50, 53, 57], "EbMaj7": [39, 43, 50, 55],
-    "Am7b5": [45, 48, 51, 55], "D7": [50, 54, 57, 60],
-    "Gm": [43, 46, 50, 53], "Dm7": [50, 53, 57, 60],
-    "G7": [43, 47, 50, 53], "CMaj7": [48, 52, 55, 59],
-    "C7b9": [48, 52, 58, 61], "Fdim7": [41, 44, 47, 50],
-    "Bb6": [46, 50, 53, 55], "E7alt": [40, 44, 50, 52]
+    "Cm7": [36, 39, 43, 46], "F7": [29, 33, 39, 42],
+    "BbMaj7": [34, 38, 41, 45], "EbMaj7": [27, 31, 38, 43],
+    "Am7b5": [33, 36, 39, 43], "D7": [38, 42, 45, 48],
+    "Gm": [31, 34, 38, 41], "Dm7": [38, 41, 45, 48],
+    "G7": [31, 35, 38, 41], "CMaj7": [36, 40, 43, 47],
+    "C7b9": [36, 40, 46, 49], "Fdim7": [29, 32, 35, 38],
+    "Bb6": [34, 38, 41, 43], "E7alt": [28, 32, 38, 40]
 }
 
+# Map MIDI note roots to chord names for jam mode
 ROOT_TO_CHORD = {
     0: "Cm7", 1: "C7b9", 2: "D7", 3: "EbMaj7",
     4: "E7alt", 5: "F7", 6: "Fdim7", 7: "Gm",
@@ -55,14 +58,14 @@ try:
 except:
     outputs = []
 
-# Ψάχνουμε FluidSynth αυτόματα
+# Look for FluidSynth or other software synth automatically
 output_port_name = next((n for n in outputs if "FLUID" in n or "Synth" in n), outputs[0] if outputs else None)
 out_port = mido.open_output(output_port_name) if output_port_name else None
 
 if out_port:
     print(f"🔊 Audio Output: {output_port_name}")
 else:
-    print("❌ ERROR: Δεν βρέθηκε FluidSynth/Audio Output!")
+    print("❌ ERROR: No FluidSynth/Audio Output found!")
 
 # ==========================================
 # --- 2. MIDI INPUT PRIORITY LOGIC ---
@@ -75,16 +78,41 @@ except:
 print("\n🎹 Scanning for MIDI Controllers...")
 input_port_name = None
 
-# Priority List (Hardware Keywords)
+# Priority: Hardware controllers > VMPK (virtual keyboard) > Fallback
 hw_keywords = ["LPD8", "Keystation", "Arturia", "Akai", "USB", "MIDI 1"]
 
-# 1. Hardware Search
+# 1. Hardware Search - collect all hardware devices
+hardware_devices = []
 for name in inputs:
-    # Αγνοούμε VMPK και Through σε αυτή τη φάση
+    # Skip VMPK and Through ports during hardware detection
     if any(kw in name for kw in hw_keywords) and "VMPK" not in name and "Midi Through" not in name:
-        input_port_name = name
-        print(f"   -> Hardware Found: {name}")
-        break
+        hardware_devices.append(name)
+
+# If hardware found, let user choose
+if hardware_devices:
+    print(f"\n🎛️  Found {len(hardware_devices)} hardware device(s):")
+    for i, device in enumerate(hardware_devices, 1):
+        print(f"   {i}. {device}")
+
+    if len(hardware_devices) == 1:
+        print(f"\nUse this device? (y/n): ", end="")
+        choice = input().strip().lower()
+        if choice == 'y' or choice == 'yes' or choice == '':
+            input_port_name = hardware_devices[0]
+            print(f"✅ Selected: {input_port_name}")
+        else:
+            print("⏭️  Skipping hardware...")
+    else:
+        print(f"\nSelect device (1-{len(hardware_devices)}) or 0 to skip: ", end="")
+        try:
+            choice = int(input().strip())
+            if 1 <= choice <= len(hardware_devices):
+                input_port_name = hardware_devices[choice - 1]
+                print(f"✅ Selected: {input_port_name}")
+            else:
+                print("⏭️  Skipping hardware...")
+        except ValueError:
+            print("⏭️  Invalid input, skipping hardware...")
 
 # 2. VMPK Search
 if not input_port_name:
@@ -98,7 +126,7 @@ if not input_port_name and inputs:
 
 
 # --- CONNECT INPUT ---
-# Callback function for Jam Mode
+# Callback function for Jam Mode - translates incoming MIDI notes to chord changes
 def midi_callback(msg):
     if msg.type == 'note_on' and msg.velocity > 0:
         root = msg.note % 12
@@ -107,13 +135,13 @@ def midi_callback(msg):
             env.set_manual_chord(new_chord)
             print(f"🎹 USER: {msg.note} -> \033[93m{new_chord}\033[0m")
         except AttributeError:
-            pass  # Σε περίπτωση που το env δεν έχει ενημερωθεί ακόμα
+            pass  # In case env hasn't been updated yet
 
 
 in_port = None
 if input_port_name:
     try:
-        # Ανοίγουμε με callback για άμεση απόκριση
+        # Open with callback for immediate response
         in_port = mido.open_input(input_port_name, callback=midi_callback)
         print(f"✅ CONNECTED INPUT: \033[92m{input_port_name}\033[0m")
     except Exception as e:
@@ -128,29 +156,29 @@ print("\n" + "=" * 30)
 print("      JAZZMATE SESSION")
 print("=" * 30)
 
-# Ερώτηση 1: Mode
-print("\n[1/2] Ποιος επιλέγει τις συγχορδίες;")
-print("  1. Το Σύστημα (Αυτόματη τυχαία σειρά)")
-print("  2. Ο Χρήστης (Jam Mode με MIDI)")
-mode_choice = input(">> Επιλογή (1 ή 2): ").strip()
+# Question 1: Who controls the chord progression?
+print("\n[1/2] Who selects the chords?")
+print("  1. System (Random automatic progression)")
+print("  2. User (Jam Mode with MIDI)")
+mode_choice = input(">> Choice (1 or 2): ").strip()
 
 MANUAL_CONTROL = (mode_choice == '2')
 
 if MANUAL_CONTROL and not in_port:
-    print("\n⚠️  ΠΡΟΣΟΧΗ: Διαλέξατε Jam Mode αλλά δεν βρέθηκε Controller!")
-    print("   Οι συγχορδίες θα μείνουν κολλημένες στην αρχική (Cm7).")
+    print("\n⚠️  WARNING: You chose Jam Mode but no controller was found!")
+    print("   Chords will stay stuck on the initial one (Cm7).")
 
-# Ερώτηση 2: Style
-print("\n[2/2] Τι στυλ συνοδείας (Πιάνο) θέλετε;")
+# Question 2: What backing style?
+print("\n[2/2] What backing style (Piano) do you want?")
 print("  1. Simple (Block Chords)")
-print("  2. Arpeggio (Ρυθμικό Άρπισμα)")
-style_choice = input(">> Επιλογή (1 ή 2): ").strip()
+print("  2. Arpeggio (Rhythmic Arpeggios)")
+style_choice = input(">> Choice (1 or 2): ").strip()
 
 STYLE = 'ARPEGGIO' if style_choice == '2' else 'SIMPLE'
 
-print("\n🚀 ΕΚΚΙΝΗΣΗ SESSION...")
+print("\n🚀 STARTING SESSION...")
 if MANUAL_CONTROL:
-    print("🎹 Παίξε νότες στο controller σου τώρα!")
+    print("🎹 Play notes on your controller now!")
 
 # ==========================================
 # --- SETUP MIDI FILE ---
@@ -163,6 +191,7 @@ mid.tracks.append(track_backing)
 meta_tempo = mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(BPM))
 track_solo.append(meta_tempo)
 track_backing.append(meta_tempo)
+# Set both tracks to piano (program 0)
 track_solo.append(Message('program_change', channel=0, program=0))
 track_backing.append(Message('program_change', channel=1, program=0))
 
@@ -183,9 +212,10 @@ steps_since_chord_change = 0
 
 try:
     for step in range(STEPS_TO_PLAY):
-        # 1. AI PREDICTION
+        # 1. AGENT PREDICTION
         action, _ = model.predict(obs, deterministic=False)
 
+        # Apply swing timing - long on beats 1 and 3, short on 2 and 4
         is_swing_long = (step % 2 == 0)
         swing_factor = 1.3 if is_swing_long else 0.7
         current_step_ticks = int(TICKS_PER_STEP * swing_factor)
@@ -197,13 +227,13 @@ try:
         note_val = 48 + int(action) if is_note else None
 
         env_chord = env.current_chord_name
-        chord_notes = PIANO_VOICINGS.get(env_chord, [48, 52, 55])
+        chord_notes = PIANO_VOICINGS.get(env_chord, [36, 40, 43])
 
         # 2. LEFT HAND (BACKING) LOGIC
         if STYLE == 'SIMPLE':
             # --- BLOCK CHORDS ---
-            # Παίζουμε νέα συγχορδία ΜΟΝΟ αν άλλαξε το όνομα (από το Auto ή το Manual Input)
-            # Ή αν είναι το πρώτο βήμα
+            # Play a new chord only when the chord name changes (from auto or manual input)
+            # or if it's the first step
             if env_chord != current_chord_name or step == 0:
                 if out_port:
                     for n in active_chord_notes:
@@ -261,6 +291,7 @@ try:
                 active_note = None
 
             if is_note:
+                # Adjust velocity based on pitch (higher notes = louder for clarity)
                 pitch_boost = (note_val - 60) // 2
                 base_vel = random.randint(110, 127)
                 final_vel = min(127, max(1, base_vel + pitch_boost))
@@ -272,15 +303,15 @@ try:
                 name = note_names[action % 12]
                 bar = (step // 16) + 1
 
-                # ΠΑΝΤΑ εμφανίζουμε τι παίζει το AI
-                prefix = "🎷 AI:" if MANUAL_CONTROL else "Melody:"
+                # Always display what the agent is playing
+                prefix = "🎷 AGENT:" if MANUAL_CONTROL else "Melody:"
                 print(f"Bar {bar} | Chord: {current_chord_name:7s} | {prefix} \033[96m{name}{octave}\033[0m")
 
             elif is_rest:
-                prefix = "🎷 AI:" if MANUAL_CONTROL else "Melody:"
+                prefix = "🎷 AGENT:" if MANUAL_CONTROL else "Melody:"
                 print(f"Bar {(step // 16) + 1} | Chord: {current_chord_name:7s} | {prefix} ---")
             elif is_hold:
-                prefix = "🎷 AI:" if MANUAL_CONTROL else "Melody:"
+                prefix = "🎷 AGENT:" if MANUAL_CONTROL else "Melody:"
                 print(f"Bar {(step // 16) + 1} | Chord: {current_chord_name:7s} | {prefix} ...")
 
         # 4. FILE SOLO LOGIC
@@ -294,21 +325,20 @@ try:
 
         # 5. STEP ENVIRONMENT
         if MANUAL_CONTROL:
-            # Στο Manual Mode, η συγχορδία αλλάζει ΜΟΝΟ από το callback
-            # Κάνουμε step για να προχωρήσει το χρόνο/ιστορικό του Agent, αλλά κρατάμε τη συγχορδία σταθερή
-            # (Εκτός αν άλλαξε στο ενδιάμεσο από το callback, το οποίο θα έχει ήδη ενημερώσει το env)
+            # In manual mode, the chord only changes via the callback
+            # We step to advance time/history, but keep the user's chord selection
             saved_chord = env.current_chord_name
             obs, _, _, _, _ = env.step(action)
-            env.current_chord_name = saved_chord  # Επαναφορά στην επιλογή χρήστη (το step του env μπορεί να προσπάθησε να την αλλάξει)
+            env.current_chord_name = saved_chord  # Restore user's chord choice
         else:
-            # Στο Auto Mode, αφήνουμε το περιβάλλον να αλλάξει συγχορδία
+            # In auto mode, let the environment change chords
             obs, _, done, _, _ = env.step(action)
             if done: obs, _ = env.reset()
 
 except KeyboardInterrupt:
     print("\nStopping...")
 
-# Cleanup
+# Cleanup - stop all playing notes
 if out_port:
     if active_note: out_port.send(Message('note_off', channel=0, note=active_note, velocity=0))
     for n in active_chord_notes: out_port.send(Message('note_off', channel=1, note=n, velocity=0))
@@ -329,6 +359,7 @@ print(f"\n✅ MIDI saved to {MIDI_FILENAME}")
 print("\n--- RENDERING AUDIO ---")
 if os.path.exists(SOUNDFONT):
     try:
+        # Convert MIDI to WAV using FluidSynth, then to MP3
         subprocess.run(["fluidsynth", "-ni", "-g", "1.5", "-F", WAV_FILENAME, SOUNDFONT, MIDI_FILENAME],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["ffmpeg", "-y", "-i", WAV_FILENAME, "-acodec", "libmp3lame", "-q:a", "2", MP3_FILENAME],

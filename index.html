@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JazzMate - Αυτόνομος Πράκτορας Τζαζ Αυτοσχεδιασμού</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: #2a2d3a;
+            color: #e8e8e8;
+            line-height: 1.8;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #1e2029;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+
+        header {
+            background: #16171d;
+            padding: 80px 50px;
+            border-bottom: 1px solid #3a3d4a;
+        }
+
+        h1 {
+            font-size: 2.8em;
+            color: #c9a961;
+            margin-bottom: 15px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #8a8d9a;
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        .main-content {
+            padding: 50px;
+        }
+
+        section {
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #2a2d3a;
+        }
+
+        section:last-of-type {
+            border-bottom: none;
+        }
+
+        h2 {
+            color: #c9a961;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        h3 {
+            color: #a88f5f;
+            font-size: 1.3em;
+            margin: 30px 0 15px 0;
+            font-weight: 400;
+        }
+
+        p {
+            margin-bottom: 18px;
+            font-size: 1.05em;
+            color: #c8c8d0;
+            line-height: 1.8;
+        }
+
+        ul {
+            margin-bottom: 20px;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 12px;
+            font-size: 1.05em;
+            color: #b8b8c0;
+        }
+
+        .downloads {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-top: 0;
+        }
+
+        .deliverables-section {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            margin-top: 35px;
+        }
+
+        .deliverables-section .video-container {
+            flex: 1;
+            min-width: 0;
+            margin: 0;
+        }
+
+        .deliverables-section .downloads {
+            flex: 0 0 350px;
+        }
+
+        .download-card {
+            background: #252831;
+            padding: 30px;
+            border: 1px solid #3a3d4a;
+            transition: all 0.3s ease;
+        }
+
+        .download-card:hover {
+            background: #2a2d3a;
+            border-color: #c9a961;
+        }
+
+        .download-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .download-card h3 {
+            margin: 0;
+            color: #c9a961;
+            font-size: 1.2em;
+        }
+
+        .download-card p {
+            font-size: 0.95em;
+            color: #a8a8b0;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        .download-card a {
+            display: inline-block;
+            padding: 8px 18px;
+            background: #3a3d4a;
+            color: #c9a961;
+            text-decoration: none;
+            font-size: 0.85em;
+            transition: all 0.3s ease;
+            border: 1px solid #4a4d5a;
+            white-space: nowrap;
+        }
+
+        .download-card a:hover {
+            background: #c9a961;
+            color: #1e2029;
+            border-color: #c9a961;
+        }
+
+        .video-container {
+            text-align: center;
+            margin: 40px 0;
+            background: #16171d;
+            padding: 30px;
+        }
+
+        video {
+            max-width: 100%;
+            max-height: 600px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .image-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid #3a3d4a;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .tech-badge {
+            background: #2a2d3a;
+            color: #c9a961;
+            padding: 8px 16px;
+            border: 1px solid #3a3d4a;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-item {
+            background: #252831;
+            padding: 20px;
+            border-left: 2px solid #c9a961;
+        }
+
+        .feature-item strong {
+            color: #c9a961;
+            font-size: 1.05em;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        footer {
+            background: #16171d;
+            padding: 40px 50px;
+            text-align: center;
+            color: #8a8d9a;
+            font-size: 0.95em;
+            border-top: 1px solid #3a3d4a;
+        }
+
+        .academic-info {
+            margin-top: 20px;
+            font-size: 1em;
+            line-height: 2;
+        }
+
+        .academic-info strong {
+            color: #c9a961;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .subtitle {
+                font-size: 1.1em;
+            }
+
+            header, .main-content, footer {
+                padding: 40px 30px;
+            }
+
+            .deliverables-section {
+                flex-direction: column;
+            }
+
+            .deliverables-section .downloads {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>JazzMate</h1>
+            <p class="title">Αυτόνομος Πράκτορας Τζαζ Αυτοσχεδιασμού με Reinforcement Learning</p>
+            <p class="subtitle">Ιωάννης Μπουρίτης</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Περιγραφή Έργου -->
+            <section>
+                <h2>Επισκόπηση</h2>
+                <p>
+                    Το JazzMate είναι ένας αυτόνομος μουσικός πράκτορας που μαθαίνει να δημιουργεί τζαζ σόλο
+                    σε πραγματικό χρόνο μέσω Deep Q-Learning. Το σύστημα ανταποκρίνεται δυναμικά σε αρμονικές
+                    εξελίξεις και αλληλεπιδρά με μουσικούς μέσω MIDI controllers.
+                </p>
+
+                <h3>Δυνατότητες</h3>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <strong>Αρμονική Συνειδητοποίηση</strong>
+                        Κατανόηση συγχορδιών και επιλογή αρμονικά κατάλληλων νοτών
+                    </div>
+                    <div class="feature-item">
+                        <strong>Μουσική Φρασεολογία</strong>
+                        Δημιουργία φυσικών μελωδικών φράσεων με μουσική δομή
+                    </div>
+                    <div class="feature-item">
+                        <strong>Αποφυγή Επαναλήψεων</strong>
+                        Μηχανισμοί για αποτροπή μονότονων μοτίβων
+                    </div>
+                    <div class="feature-item">
+                        <strong>Διαδραστικό Jamming</strong>
+                        Αλληλεπίδραση σε πραγματικό χρόνο με ανθρώπους μουσικούς
+                    </div>
+                </div>
+
+                <h3>Τεχνική Προσέγγιση</h3>
+                <p>
+                    Ο πράκτορας εκπαιδεύεται με Deep Q-Networks από το Stable-Baselines3,
+                    χρησιμοποιώντας ένα προσαρμοσμένο περιβάλλον Gymnasium που ενσωματώνει μουσική θεωρία
+                    στη συνάρτηση ανταμοιβής. Μοντελοποιείται ως Markov Decision Process όπου η κατάσταση
+                    περιλαμβάνει την τρέχουσα συγχορδία και προηγούμενες νότες, οι ενέργειες αφορούν την
+                    επιλογή νότας, και η ανταμοιβή βασίζεται σε αρμονική συμβατότητα και μελωδική ροή.
+                </p>
+            </section>
+
+            <!-- Παραδοτέα & Video -->
+            <section>
+                <h2>Παραδοτέα & Demo</h2>
+                
+                <div class="deliverables-section">
+                    <div class="video-container">
+                        <video controls>
+                            <source src="results/playtest.mp4" type="video/mp4">
+                            Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το στοιχείο video.
+                        </video>
+                    </div>
+
+                    <div class="downloads">
+                        <div class="download-card">
+                            <div class="download-card-header">
+                                <h3>📄 Αναφορά</h3>
+                                <a href="report.pdf" target="_blank">View</a>
+                            </div>
+                            <p>Αναλυτική τεχνική τεκμηρίωση με τη διατύπωση MDP, τη συνάρτηση ανταμοιβής,
+                               τη μεθοδολογία εκπαίδευσης και την ανάλυση αποτελεσμάτων.</p>
+                        </div>
+
+                        <div class="download-card">
+                            <div class="download-card-header">
+                                <h3>📊 Παρουσίαση</h3>
+                                <a href="JazzMate Presentation.pdf" target="_blank">View</a>
+                            </div>
+                            <p>Σύντομη παρουσίαση με τα κύρια σημεία του έργου και την αξιολόγηση 
+                               της απόδοσης του πράκτορα.</p>
+                        </div>
+
+                        <div class="download-card">
+                            <div class="download-card-header">
+                                <h3>💻 Κώδικας</h3>
+                                <a href="source_code.zip" download>Download</a>
+                            </div>
+                            <p>Ολοκληρωμένος πηγαίος κώδικας του περιβάλλοντος RL, του συστήματος 
+                               εκπαίδευσης και του διαδραστικού playback με όλες τις εξαρτήσεις.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Αποτελέσματα -->
+            <section>
+                <h2>Αποτελέσματα Εκπαίδευσης</h2>
+
+                <p>
+                    Η εξέλιξη της απόδοσης του πράκτορα κατά τη διάρκεια της εκπαίδευσης 200,000 βημάτων:
+                </p>
+                <div class="image-container">
+                    <img src="results/learning_curve.png" alt="Καμπύλη Μάθησης">
+                </div>
+            </section>
+
+        <footer>
+            <div class="academic-info">
+                <strong>Μάθημα:</strong> Αυτόνομοι Πράκτορες<br>
+                <strong>Ίδρυμα:</strong> Πολυτεχνείο Κρήτης<br>
+                <strong>Φοιτητής:</strong> Ιωάννης Μπουρίτης<br>
+                <strong>Εξάμηνο:</strong> Χειμερινό 2025-2026
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

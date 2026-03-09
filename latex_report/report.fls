@@ -1,0 +1,20 @@
+PWD /home/fenrikos/Documents/University/Autonomous Agents/Semester Project/latex_report
+INPUT /usr/share/texmf-dist/web2c/texmf.cnf
+INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
+INPUT /home/fenrikos/Documents/University/Autonomous Agents/Semester Project/latex_report/report.tex
+OUTPUT report.log
+INPUT /usr/share/texmf-dist/tex/latex/base/article.cls
+INPUT /usr/share/texmf-dist/tex/latex/base/article.cls
+INPUT /usr/share/texmf-dist/tex/latex/base/size11.clo
+INPUT /usr/share/texmf-dist/tex/latex/base/size11.clo
+INPUT /usr/share/texmf-dist/tex/latex/base/size11.clo
+INPUT /usr/share/texmf-dist/fonts/map/fontname/texfonts.map
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
+INPUT /usr/share/texmf-dist/tex/latex/fontspec/fontspec.sty
+INPUT /usr/share/texmf-dist/tex/latex/fontspec/fontspec.sty
+INPUT /usr/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
+INPUT /usr/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
+INPUT /usr/share/texmf-dist/tex/latex/l3kernel/expl3.sty
+INPUT /usr/share/texmf-dist/tex/latex/l3kernel/expl3.sty
+INPUT /usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+INPUT /usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
