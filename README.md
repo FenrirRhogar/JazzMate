@@ -21,14 +21,24 @@ The agent is trained using **Deep Q-Networks (DQN)** from Stable-Baselines3, wit
 
 ## 📁 Project Structure
 
-```
+```text
 JazzMate/
-├── jazz_env.py          # Custom RL environment (MDP definition)
-├── train.py             # Training script with monitoring
-├── play_jazz.py         # Interactive playback system
-├── report.pdf           # Full technical report
-├── requirements.txt     # Python dependencies
-└── README.md
+├── jazz_env.py           # Custom RL environment (MDP definition)
+├── train.py              # Training script with monitoring
+├── play_jazz.py          # Interactive playback system
+├── report.pdf            # Full technical report
+├── JazzMate Presentation.pdf # Project presentation slides
+├── index.html            # Web-based project summary/demo
+├── requirements.txt      # Python dependencies
+├── LICENSE               # Project license (MIT)
+├── README.md             # Project documentation
+├── training_graph.png    # Training performance visualization
+├── results/              # Evaluation results
+│   ├── learning_curve.png
+│   └── playtest.mp4      # Video demonstration of the agent
+├── training_logs/        # Training session logs
+│   └── monitor.csv       # Step-by-step training metrics
+└── .venv/                # Python virtual environment
 ```
 
 ---
