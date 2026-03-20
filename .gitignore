@@ -6,7 +6,6 @@ __pycache__/
 # Generated files
 *.mid
 *.mp3
-*.zip
 *.log
 *.aux
 *.toc

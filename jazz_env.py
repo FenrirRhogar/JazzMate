@@ -223,4 +223,9 @@ class JazzImprovisationEnv(gym.Env):
         elif self.consecutive_varied_notes >= 5:
             reward += 4.0
 
+        # === NORMALIZATION ===
+        # Normalize rewards to keep them in a reasonable range for stable learning
+        # Using tanh to smoothly compress extreme values while preserving sign and relative magnitude
+        reward = np.tanh(reward / 10.0) * 5.0
+
         return reward
