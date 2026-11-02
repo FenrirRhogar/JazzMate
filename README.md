@@ -30,16 +30,16 @@ JazzMate/
 ├── JazzMate Presentation.pdf # Project presentation slides
 ├── index.html                # Web-based project summary/demo
 ├── requirements.txt          # Python dependencies
-├── source_code.zip           # Source code
+├── jazz_model.zip            # Trained DQN model (loaded by play_jazz.py)
+├── source_code.zip           # Source archive offered for download on index.html
 ├── LICENSE                   # Project license (MIT)
 ├── README.md                 # Project documentation
 ├── training_graph.png        # Training performance visualization
 ├── results/                  # Evaluation results
 │   ├── learning_curve.png
 │   └── playtest.mp4      
-├── training_logs/            # Training session logs
-│   └── monitor.csv           # Step-by-step training metrics
-└── .venv/                    # Python virtual environment
+└── training_logs/            # Training session logs
+    └── monitor.csv           # Step-by-step training metrics
 ```
 
 ---
